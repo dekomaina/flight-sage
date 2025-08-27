@@ -1,19 +1,24 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
-import { Icon } from 'leaflet';
-import { Card } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plane, Navigation, CloudRain, Wind, AlertTriangle } from 'lucide-react';
-import 'leaflet/dist/leaflet.css';
-
-// Fix for default markers in react-leaflet
-delete (Icon.Default.prototype as any)._getIconUrl;
-Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { 
+  MapPin, 
+  Navigation, 
+  Plane, 
+  Radar, 
+  Compass,
+  RefreshCw,
+  Volume2,
+  AlertTriangle,
+  Satellite,
+  Map as MapIcon,
+  Route,
+  Building,
+  Radio
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Airport {
   id: string;
@@ -51,66 +56,44 @@ const FlightMap: React.FC<FlightMapProps> = ({
   onAirportSelect,
   onRouteCalculated
 }) => {
-  const [airports, setAirports] = useState<Airport[]>([]);
-  const [flightPaths, setFlightPaths] = useState<FlightPath[]>([]);
-  const [weatherData, setWeatherData] = useState<any>(null);
+  const { toast } = useToast();
+  const [airports] = useState<Airport[]>([
+    {
+      id: '1',
+      name: 'John F. Kennedy International Airport',
+      code: 'JFK',
+      lat: 40.6413,
+      lng: -73.7781,
+      type: 'major',
+      facilities: ['Control Tower', 'Radar', 'ILS', 'Emergency Services']
+    },
+    {
+      id: '2',
+      name: 'Los Angeles International Airport',
+      code: 'LAX',
+      lat: 34.0522,
+      lng: -118.2437,
+      type: 'major',
+      facilities: ['Control Tower', 'Radar', 'ILS', 'Emergency Services', 'Weather Station']
+    },
+    {
+      id: '3',
+      name: 'Chicago O\'Hare International Airport',
+      code: 'ORD',
+      lat: 41.9742,
+      lng: -87.9073,
+      type: 'major',
+      facilities: ['Control Tower', 'Radar', 'ILS', 'Emergency Services']
+    }
+  ]);
+
   const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
+  const [routeInfo, setRouteInfo] = useState<FlightPath | null>(null);
 
-  // Mock airports data (in real implementation, fetch from aviation APIs)
-  useEffect(() => {
-    const mockAirports: Airport[] = [
-      {
-        id: '1',
-        name: 'John F. Kennedy International Airport',
-        code: 'JFK',
-        lat: 40.6413,
-        lng: -73.7781,
-        type: 'major',
-        facilities: ['Control Tower', 'Radar', 'ILS', 'Emergency Services']
-      },
-      {
-        id: '2',
-        name: 'Los Angeles International Airport',
-        code: 'LAX',
-        lat: 34.0522,
-        lng: -118.2437,
-        type: 'major',
-        facilities: ['Control Tower', 'Radar', 'ILS', 'Emergency Services', 'Weather Station']
-      },
-      {
-        id: '3',
-        name: 'Chicago O\'Hare International Airport',
-        code: 'ORD',
-        lat: 41.9742,
-        lng: -87.9073,
-        type: 'major',
-        facilities: ['Control Tower', 'Radar', 'ILS', 'Emergency Services']
-      },
-      {
-        id: '4',
-        name: 'Heathrow Airport',
-        code: 'LHR',
-        lat: 51.4700,
-        lng: -0.4543,
-        type: 'major',
-        facilities: ['Control Tower', 'Radar', 'ILS', 'Emergency Services']
-      },
-      {
-        id: '5',
-        name: 'Regional Airfield Alpha',
-        code: 'RAF',
-        lat: 42.3601,
-        lng: -71.0589,
-        type: 'regional',
-        facilities: ['Control Tower', 'Basic Navigation']
-      }
-    ];
-
-    setAirports(mockAirports);
-
-    // Generate mock flight paths if we have origin and destination
+  const calculateRoute = () => {
     if (currentLocation && destination) {
-      const mockPath: FlightPath = {
+      const distance = calculateDistance(currentLocation, destination);
+      const route: FlightPath = {
         id: 'route-1',
         origin: currentLocation,
         destination: destination,
@@ -118,15 +101,21 @@ const FlightMap: React.FC<FlightMapProps> = ({
           [currentLocation[0] + 0.5, currentLocation[1] - 0.5],
           [destination[0] - 0.5, destination[1] + 0.5]
         ],
-        distance: calculateDistance(currentLocation, destination),
-        estimatedTime: '2h 45m',
-        difficulty: 'moderate',
+        distance,
+        estimatedTime: Math.round(distance / 800 * 60) + 'm', // Rough calculation
+        difficulty: distance > 1000 ? 'challenging' : distance > 500 ? 'moderate' : 'easy',
         weather: 'clear'
       };
-      setFlightPaths([mockPath]);
-      onRouteCalculated?.(mockPath);
+      
+      setRouteInfo(route);
+      onRouteCalculated?.(route);
+      
+      toast({
+        title: "Route Calculated",
+        description: `${distance.toFixed(0)} km route planned successfully`
+      });
     }
-  }, [currentLocation, destination, onRouteCalculated]);
+  };
 
   const calculateDistance = (point1: [number, number], point2: [number, number]): number => {
     const R = 6371; // Earth's radius in km
@@ -139,190 +128,256 @@ const FlightMap: React.FC<FlightMapProps> = ({
     return R * c;
   };
 
-  const getAirportIcon = (airport: Airport) => {
-    const color = airport.type === 'major' ? '#0070f3' : airport.type === 'regional' ? '#ff6b35' : '#10b981';
-    return new Icon({
-      iconUrl: `data:image/svg+xml;base64,${btoa(`
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M21 16V14L13 9V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9L2 14V16L10 13.5V19L8 20.5V22L11.5 21L15 22V20.5L13 19V13.5L21 16Z" fill="${color}"/>
-        </svg>
-      `)}`,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12],
-    });
-  };
-
-  const WeatherOverlay = () => {
-    const map = useMap();
-    
-    useEffect(() => {
-      if (showWeather && currentLocation) {
-        // Mock weather data overlay
-        // In real implementation, use weather APIs
-        setWeatherData({
-          temperature: '22°C',
-          windSpeed: '15 kt',
-          visibility: '10+ km',
-          conditions: 'Clear'
-        });
-      }
-    }, [showWeather, currentLocation]);
-
-    return null;
+  const formatCoordinates = (coords: [number, number]) => {
+    return `${coords[0].toFixed(4)}°, ${coords[1].toFixed(4)}°`;
   };
 
   return (
-    <div className="relative w-full h-[600px] rounded-lg overflow-hidden shadow-lg">
-      <MapContainer
-        center={currentLocation || [40.7128, -74.0060] as [number, number]}
-        zoom={currentLocation ? 8 : 2}
-        style={{ width: '100%', height: '100%' }}
-      >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        
-        <WeatherOverlay />
+    <div className="space-y-6">
+      {/* Map Visualization */}
+      <Card className="overflow-hidden">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapIcon className="h-5 w-5 text-primary" />
+            Flight Navigation Map
+          </CardTitle>
+          <CardDescription>
+            Interactive aviation map with real-time flight paths and weather
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="relative w-full h-[500px] bg-gradient-to-br from-blue-50 to-sky-100 dark:from-blue-950 dark:to-sky-950 rounded-lg overflow-hidden border-2 border-blue-200 dark:border-blue-800">
+            
+            {/* Map Grid */}
+            <div className="absolute inset-0 opacity-20">
+              <svg className="w-full h-full">
+                <defs>
+                  <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+                    <path d="M 50 0 L 0 0 0 50" fill="none" stroke="currentColor" strokeWidth="1"/>
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+              </svg>
+            </div>
 
-        {/* Current location marker */}
-        {currentLocation && (
-          <Marker position={currentLocation}>
-            <Popup>
-              <div className="text-center">
-                <h3 className="font-semibold text-primary">Current Location</h3>
-                <p className="text-sm text-muted-foreground">
-                  {currentLocation[0].toFixed(4)}, {currentLocation[1].toFixed(4)}
-                </p>
+            {/* Radar Sweep Animation */}
+            <div className="absolute top-4 right-4 w-16 h-16 border-2 border-green-400 rounded-full flex items-center justify-center bg-green-50 dark:bg-green-950">
+              <div className="w-8 h-8 relative">
+                <div className="absolute inset-0 border-2 border-green-500 rounded-full radar-sweep opacity-60"></div>
+                <Radar className="h-6 w-6 text-green-600 absolute top-1 left-1" />
               </div>
-            </Popup>
-          </Marker>
-        )}
+            </div>
 
-        {/* Destination marker */}
-        {destination && (
-          <Marker position={destination}>
-            <Popup>
-              <div className="text-center">
-                <h3 className="font-semibold text-primary">Destination</h3>
-                <p className="text-sm text-muted-foreground">
-                  {destination[0].toFixed(4)}, {destination[1].toFixed(4)}
-                </p>
-              </div>
-            </Popup>
-          </Marker>
-        )}
-
-        {/* Airport markers */}
-        {airports.map((airport) => (
-          <Marker
-            key={airport.id}
-            position={[airport.lat, airport.lng]}
-            eventHandlers={{
-              click: () => {
-                setSelectedAirport(airport);
-                onAirportSelect?.(airport);
-              }
-            }}
-          >
-            <Popup>
-              <div className="min-w-[200px]">
-                <h3 className="font-semibold text-primary">{airport.name}</h3>
-                <p className="text-sm font-mono">{airport.code}</p>
-                <Badge variant={airport.type === 'major' ? 'default' : 'secondary'} className="mt-1">
-                  {airport.type}
-                </Badge>
-                <div className="mt-2">
-                  <p className="text-xs font-semibold">Facilities:</p>
-                  <ul className="text-xs text-muted-foreground">
-                    {airport.facilities.map((facility, idx) => (
-                      <li key={idx}>• {facility}</li>
-                    ))}
-                  </ul>
+            {/* Current Location */}
+            {currentLocation && (
+              <div className="absolute animate-pulse" style={{
+                top: '40%',
+                left: '30%',
+                transform: 'translate(-50%, -50%)'
+              }}>
+                <div className="w-4 h-4 bg-blue-500 rounded-full shadow-lg pulse-glow"></div>
+                <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-blue-600 whitespace-nowrap">
+                  Current Location
                 </div>
               </div>
-            </Popup>
-          </Marker>
-        ))}
+            )}
 
-        {/* Flight paths */}
-        {flightPaths.map((path) => (
-          <React.Fragment key={path.id}>
-            <Polyline
-              positions={[path.origin, ...path.waypoints, path.destination]}
-              pathOptions={{
-                color: path.difficulty === 'easy' ? '#10b981' : path.difficulty === 'moderate' ? '#f59e0b' : '#ef4444',
-                weight: 3,
-                opacity: 0.8
-              }}
-            />
-          </React.Fragment>
-        ))}
-      </MapContainer>
+            {/* Destination */}
+            {destination && (
+              <div className="absolute" style={{
+                top: '30%',
+                left: '70%',
+                transform: 'translate(-50%, -50%)'
+              }}>
+                <div className="w-4 h-4 bg-red-500 rounded-full shadow-lg"></div>
+                <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-red-600 whitespace-nowrap">
+                  Destination
+                </div>
+              </div>
+            )}
 
-      {/* Weather info overlay */}
-      {showWeather && weatherData && (
-        <Card className="absolute top-4 right-4 p-4 bg-background/90 backdrop-blur-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <CloudRain className="h-4 w-4 text-primary" />
-            <span className="font-semibold text-sm">Weather</span>
+            {/* Airports */}
+            {airports.slice(0, 3).map((airport, index) => (
+              <div 
+                key={airport.id}
+                className="absolute cursor-pointer group"
+                style={{
+                  top: `${20 + index * 25}%`,
+                  left: `${20 + index * 30}%`,
+                  transform: 'translate(-50%, -50%)'
+                }}
+                onClick={() => {
+                  setSelectedAirport(airport);
+                  onAirportSelect?.(airport);
+                }}
+              >
+                <div className="relative">
+                  <Plane className="h-6 w-6 text-indigo-600 hover:text-indigo-800 transition-colors airplane-float" />
+                  <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs font-medium text-indigo-600 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                    {airport.code}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Flight Path */}
+            {currentLocation && destination && (
+              <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                <path
+                  d={`M ${30}% ${40}% Q ${50}% ${20}% ${70}% ${30}%`}
+                  stroke="#3b82f6"
+                  strokeWidth="3"
+                  fill="none"
+                  strokeDasharray="10,5"
+                  className="animate-pulse"
+                />
+                <circle cx="30%" cy="40%" r="3" fill="#3b82f6" />
+                <circle cx="70%" cy="30%" r="3" fill="#ef4444" />
+              </svg>
+            )}
+
+            {/* Weather Indicators */}
+            {showWeather && (
+              <div className="absolute top-4 left-4 space-y-2">
+                <Badge variant="outline" className="bg-white/80 dark:bg-gray-800/80">
+                  🌤️ Clear Skies
+                </Badge>
+                <Badge variant="outline" className="bg-white/80 dark:bg-gray-800/80">
+                  🌬️ Wind: 15 kt
+                </Badge>
+              </div>
+            )}
+
+            {/* Map Controls */}
+            <div className="absolute bottom-4 left-4 space-x-2">
+              <Button size="sm" variant="outline" onClick={calculateRoute}>
+                <Route className="h-4 w-4 mr-2" />
+                Calculate Route
+              </Button>
+            </div>
           </div>
-          <div className="space-y-1 text-xs">
-            <div className="flex justify-between">
-              <span>Temperature:</span>
-              <span>{weatherData.temperature}</span>
+        </CardContent>
+      </Card>
+
+      {/* Route Information */}
+      {routeInfo && (
+        <Card className="fly-in">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Navigation className="h-5 w-5 text-primary" />
+              Calculated Flight Route
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{routeInfo.distance.toFixed(0)} km</p>
+                <p className="text-sm text-muted-foreground">Total Distance</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{routeInfo.estimatedTime}</p>
+                <p className="text-sm text-muted-foreground">Flight Time</p>
+              </div>
+              <div className="text-center">
+                <Badge variant={routeInfo.difficulty === 'easy' ? 'default' : 'secondary'} className="text-lg px-4 py-2">
+                  {routeInfo.difficulty}
+                </Badge>
+                <p className="text-sm text-muted-foreground mt-1">Difficulty</p>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span>Wind:</span>
-              <span>{weatherData.windSpeed}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Visibility:</span>
-              <span>{weatherData.visibility}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Conditions:</span>
-              <span>{weatherData.conditions}</span>
-            </div>
-          </div>
+          </CardContent>
         </Card>
       )}
 
-      {/* Flight path info */}
-      {flightPaths.length > 0 && (
-        <Card className="absolute bottom-4 left-4 p-4 bg-background/90 backdrop-blur-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <Navigation className="h-4 w-4 text-primary" />
-            <span className="font-semibold text-sm">Route Information</span>
-          </div>
-          {flightPaths.map((path) => (
-            <div key={path.id} className="space-y-1 text-xs">
-              <div className="flex justify-between">
-                <span>Distance:</span>
-                <span>{path.distance.toFixed(0)} km</span>
+      {/* Selected Airport Info */}
+      {selectedAirport && (
+        <Card className="fly-in">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building className="h-5 w-5 text-primary" />
+              {selectedAirport.name}
+            </CardTitle>
+            <CardDescription>Airport Information</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">Airport Code:</span>
+                <Badge variant="outline" className="font-mono">{selectedAirport.code}</Badge>
               </div>
-              <div className="flex justify-between">
-                <span>Est. Time:</span>
-                <span>{path.estimatedTime}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Difficulty:</span>
-                <Badge variant={path.difficulty === 'easy' ? 'default' : 'secondary'}>
-                  {path.difficulty}
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">Type:</span>
+                <Badge variant={selectedAirport.type === 'major' ? 'default' : 'secondary'}>
+                  {selectedAirport.type}
                 </Badge>
               </div>
-              <div className="flex justify-between items-center">
-                <span>Weather:</span>
-                <div className="flex items-center gap-1">
-                  {path.weather === 'stormy' && <AlertTriangle className="h-3 w-3 text-destructive" />}
-                  <span className={path.weather === 'stormy' ? 'text-destructive' : 'text-foreground'}>
-                    {path.weather}
-                  </span>
+              <div>
+                <span className="font-semibold">Facilities:</span>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedAirport.facilities.map((facility, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {facility}
+                    </Badge>
+                  ))}
                 </div>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">Coordinates:</span>
+                <span className="font-mono text-sm">{formatCoordinates([selectedAirport.lat, selectedAirport.lng])}</span>
+              </div>
             </div>
-          ))}
+          </CardContent>
         </Card>
       )}
+
+      {/* Navigation Tools */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Compass className="h-5 w-5 text-primary" />
+              Navigation Tools
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button variant="outline" className="w-full justify-start">
+              <MapPin className="h-4 w-4 mr-2" />
+              Set Waypoint
+            </Button>
+            <Button variant="outline" className="w-full justify-start">
+              <Route className="h-4 w-4 mr-2" />
+              Plan Alternative Route
+            </Button>
+            <Button variant="outline" className="w-full justify-start">
+              <Satellite className="h-4 w-4 mr-2" />
+              GPS Calibration
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Radio className="h-5 w-5 text-primary" />
+              Communication
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between items-center p-2 border rounded">
+              <span className="text-sm">ATC Tower:</span>
+              <Badge variant="outline" className="font-mono">121.5</Badge>
+            </div>
+            <div className="flex justify-between items-center p-2 border rounded">
+              <span className="text-sm">Approach:</span>
+              <Badge variant="outline" className="font-mono">125.25</Badge>
+            </div>
+            <div className="flex justify-between items-center p-2 border rounded">
+              <span className="text-sm">Emergency:</span>
+              <Badge variant="destructive" className="font-mono">121.5</Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

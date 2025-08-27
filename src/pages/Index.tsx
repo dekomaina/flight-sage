@@ -12,13 +12,20 @@ import {
   Search,
   Compass,
   Radio,
-  Gauge
+  Gauge,
+  Zap,
+  Shield,
+  Globe,
+  Headphones,
+  Sparkles
 } from 'lucide-react';
 import FlightSearchForm from '@/components/FlightSearchForm';
 import VoiceInterface from '@/components/VoiceInterface';
 import WeatherWidget from '@/components/WeatherWidget';
 import LocationTracker from '@/components/LocationTracker';
 import FlightMap from '@/components/FlightMap';
+import heroAirplane from '@/assets/hero-airplane.jpg';
+import aviationBg from '@/assets/aviation-bg.jpg';
 
 const Index = () => {
   const [currentLocation, setCurrentLocation] = useState<[number, number] | undefined>();
@@ -67,61 +74,127 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-950 dark:to-indigo-950">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/5" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center">
-            <div className="flex justify-center items-center gap-3 mb-6">
-              <div className="p-3 bg-primary/10 rounded-2xl">
-                <Plane className="h-8 w-8 text-primary" />
+      {/* Hero Section with Airplane */}
+      <div className="relative overflow-hidden flight-hero">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+          style={{ backgroundImage: `url(${aviationBg})` }}
+        />
+        
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full animate-pulse opacity-60"></div>
+          <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-white rounded-full animate-pulse opacity-40 animation-delay-1000"></div>
+          <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-white rounded-full animate-pulse opacity-50 animation-delay-2000"></div>
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <div className="text-left space-y-8 fly-in">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl pulse-glow">
+                    <Plane className="h-8 w-8 text-white" />
+                  </div>
+                  <h1 className="text-5xl lg:text-6xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    Flight Sage AI
+                  </h1>
+                </div>
+                
+                <div className="space-y-2">
+                  <h2 className="text-2xl lg:text-3xl font-semibold text-gray-800 dark:text-gray-200">
+                    Your Intelligent Aviation Assistant
+                  </h2>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
+                    Experience the future of flight planning with AI-powered search, real-time weather analysis, 
+                    GPS navigation, and hands-free voice control designed for pilots and travelers.
+                  </p>
+                </div>
               </div>
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Flight Sage AI
-              </h1>
-            </div>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Your intelligent aviation assistant with AI-powered flight search, real-time weather analysis, 
-              GPS navigation, and voice control for pilots and travelers.
-            </p>
-            
-            <div className="flex flex-wrap justify-center gap-4 mb-8">
-              <Badge variant="secondary" className="px-4 py-2">
-                <Mic className="h-4 w-4 mr-2" />
-                Voice Commands
-              </Badge>
-              <Badge variant="secondary" className="px-4 py-2">
-                <Navigation className="h-4 w-4 mr-2" />
-                Smart Routes
-              </Badge>
-              <Badge variant="secondary" className="px-4 py-2">
-                <CloudRain className="h-4 w-4 mr-2" />
-                Real-time Weather
-              </Badge>
-              <Badge variant="secondary" className="px-4 py-2">
-                <MapPin className="h-4 w-4 mr-2" />
-                GPS Tracking
-              </Badge>
+              
+              {/* Feature Highlights */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+                  <Sparkles className="h-6 w-6 text-yellow-500" />
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">AI-Powered</span>
+                </div>
+                <div className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+                  <Headphones className="h-6 w-6 text-green-500" />
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">Voice Control</span>
+                </div>
+                <div className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+                  <Globe className="h-6 w-6 text-blue-500" />
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">Global Coverage</span>
+                </div>
+                <div className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+                  <Shield className="h-6 w-6 text-purple-500" />
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">Safety First</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button 
+                  size="lg" 
+                  onClick={() => setActiveTab('voice')}
+                  className="text-lg px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                >
+                  <Mic className="h-5 w-5 mr-2" />
+                  Start Voice Assistant
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={() => setActiveTab('search')}
+                  className="text-lg px-8 py-4 border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                >
+                  <Search className="h-5 w-5 mr-2" />
+                  Search Flights
+                </Button>
+              </div>
             </div>
 
-            <div className="flex justify-center gap-4">
-              <Button 
-                size="lg" 
-                onClick={() => setActiveTab('voice')}
-                className="text-lg px-8"
-              >
-                <Mic className="h-5 w-5 mr-2" />
-                Start Voice Assistant
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={() => setActiveTab('search')}
-                className="text-lg px-8"
-              >
-                <Search className="h-5 w-5 mr-2" />
-                Search Flights
-              </Button>
+            {/* Right Content - Airplane Image */}
+            <div className="relative">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl">
+                <img 
+                  src={heroAirplane} 
+                  alt="Modern Commercial Airplane" 
+                  className="w-full h-[500px] object-cover airplane-float"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/20 to-transparent"></div>
+                
+                {/* Floating Stats */}
+                <div className="absolute top-6 left-6 space-y-3">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg fly-in animation-delay-500">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-yellow-500" />
+                      <span className="text-sm font-semibold">Real-time Processing</span>
+                    </div>
+                  </div>
+                  <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg fly-in animation-delay-700">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm font-semibold">5000+ Airports</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="absolute bottom-6 right-6">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg fly-in animation-delay-1000">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-green-500" />
+                      <span className="text-sm font-semibold">99.9% Safety Rating</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Decorative Elements */}
+              <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full opacity-20 animate-pulse"></div>
+              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full opacity-20 animate-pulse animation-delay-1000"></div>
             </div>
           </div>
         </div>
